@@ -9,29 +9,26 @@ const supabaseAdmin = createClient(
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { lsc, services } = body;
+    // Destructuring based on the frontend payload
+    const { lsc, services, servicecategories } = body;
 
-    /* 1️⃣ Get current row count to ensure the code grows with the DB */
+    /*  Get current row count for application code generation */
     const { count, error: countError } = await supabaseAdmin
       .from('lscs')
       .select('*', { count: 'exact', head: true });
 
     if (countError) throw countError;
 
-    /* 2️⃣ Generate a UNIQUE 5-Digit Integer Code */
+    /*  Generate a UNIQUE 5-Digit Integer Code */
     let applicationCode: number = 0;
     let isUnique = false;
     let attempts = 0;
     const maxAttempts = 15;
 
     while (!isUnique && attempts < maxAttempts) {
-      // Generate random number between 10000 and 90000 to ensure 5 digits
       const randomBase = Math.floor(10000 + Math.random() * 80000); 
-      
-      // Add count to make it even more unique and sequential-ish
       const candidate = randomBase + (count || 0);
 
-      // Check for collision in Supabase
       const { data: existing } = await supabaseAdmin
         .from('lscs')
         .select('applicationCode')
@@ -52,14 +49,14 @@ export async function POST(req: Request) {
       );
     }
 
-    /* 3️⃣ Insert the LSC Record */
+    /*  Insert the LSC Record */
     const { data: lscRow, error: lscError } = await supabaseAdmin
       .from('lscs')
       .insert({
         ...lsc,
         applicationCode: applicationCode,
         is_active: false,
-        status: 'PENDING' // Ensure status matches your Admin Panel filter
+        status: 'PENDING'
       })
       .select('id')
       .single();
@@ -71,24 +68,45 @@ export async function POST(req: Request) {
       );
     }
 
-    /* 4️⃣ Insert Related Services */
-    if (services && Array.isArray(services) && services.length > 0) {
-      const serviceRows = services.map((serviceId: string) => ({
-        lsc_id: lscRow.id,
-        service_item_id: serviceId,
-      }));
+    const newLscId = lscRow.id;
 
-      const { error: serviceError } = await supabaseAdmin
-        .from('lsc_services')
-        .insert(serviceRows);
+    try {
+      /*  Insert into lsc_service_categories first */
+      if (servicecategories && Array.isArray(servicecategories) && servicecategories.length > 0) {
+        const categoryRows = servicecategories.map((catId: string) => ({
+          lsc_id: newLscId,
+          service_categories_item_id: catId,
+        }));
 
-      if (serviceError) {
-        await supabaseAdmin.from('lscs').delete().eq('id', lscRow.id);
-        return NextResponse.json(
-          { error: `Service mapping failed: ${serviceError.message}` },
-          { status: 400 }
-        );
+        const { error: catError } = await supabaseAdmin
+          .from('lsc_services_categories')
+          .insert(categoryRows);
+
+        if (catError) throw new Error(`Category mapping failed: ${catError.message}`);
       }
+
+      /*  Insert into lsc_services next */
+      if (services && Array.isArray(services) && services.length > 0) {
+        const serviceRows = services.map((serviceId: string) => ({
+          lsc_id: newLscId,
+          service_item_id: serviceId,
+        }));
+
+        const { error: serviceError } = await supabaseAdmin
+          .from('lsc_services')
+          .insert(serviceRows);
+
+        if (serviceError) throw new Error(`Service mapping failed: ${serviceError.message}`);
+      }
+
+    } catch (mappingError: any) {
+      /* ROLLBACK: Delete the LSC record if mapping fails to prevent orphan records */
+      await supabaseAdmin.from('lscs').delete().eq('id', newLscId);
+      
+      return NextResponse.json(
+        { error: mappingError.message },
+        { status: 400 }
+      );
     }
 
     return NextResponse.json({

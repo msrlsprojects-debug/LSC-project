@@ -87,10 +87,7 @@ export default function CreateAdminUserPage() {
         return;
       }
 
-      // ✅ SUCCESS
       setSuccess(true);
-
-      // Reset form
       setEmail('');
       setPassword('');
       setDistrictId('');
@@ -105,13 +102,23 @@ export default function CreateAdminUserPage() {
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">
-          Create Admin User
-        </h1>
-        <p className="text-sm text-slate-600">
-          Create District or Block level administrators
-        </p>
+      
+      {/* HEADER WITH BACK BUTTON ON THE RIGHT */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">
+            Create Admin User
+          </h1>
+          <p className="text-sm text-slate-600">
+            Create District or Block level administrators
+          </p>
+        </div>
+        <button
+          onClick={() => router.back()}
+          className="border px-4 py-2 rounded text-sm hover:bg-slate-50 transition-colors"
+        >
+          Back ←
+        </button>
       </div>
 
       <div className="bg-white border rounded-lg p-6 space-y-4">
@@ -203,7 +210,7 @@ export default function CreateAdminUserPage() {
         <div className="flex justify-between pt-4">
           <button
             onClick={() => router.back()}
-            className="border px-4 py-2 rounded"
+            className="border px-4 py-2 rounded hover:bg-slate-50 transition-colors"
           >
             Cancel
           </button>
@@ -211,7 +218,7 @@ export default function CreateAdminUserPage() {
           <button
             onClick={createUser}
             disabled={saving}
-            className="bg-slate-800 text-white px-5 py-2 rounded"
+            className="bg-slate-800 text-white px-5 py-2 rounded hover:bg-slate-700 disabled:opacity-50 transition-colors"
           >
             {saving ? 'Creating…' : 'Create User'}
           </button>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link'; 
 
 type UserProfile = {
   user_id: string;
@@ -72,12 +73,18 @@ export default function UserManagementPage() {
             District & Block Administrator Accounts
           </p>
         </div>
-        <button
+        {/* <button
           onClick={() => router.back()}
           className="border px-4 py-2 rounded text-sm hover:bg-slate-50"
         >
           ← Back
-        </button>
+        </button> */}
+        <Link
+          href="/dashboard/admin/users/create" 
+          className="border px-4 py-2 rounded text-sm hover:bg-slate-50 inline-flex items-center"
+        >
+          Create User + 
+        </Link>
       </div>
 
       {/* DESKTOP TABLE */}

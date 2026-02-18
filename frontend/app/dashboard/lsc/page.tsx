@@ -277,7 +277,7 @@ export default function LSCDashboard() {
     <div className="min-h-screen bg-gray-100">
 
       {/* NAV */}
-      <header className="bg-gradient-to-r from-blue-700 to-blue-600 text-white border-b">
+      {/* <header className="bg-gradient-to-r from-blue-700 to-blue-600 text-white border-b">
         <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between">
           <div>
             <p className="text-xs opacity-90">MSRLS – LSC MIS</p>
@@ -286,7 +286,7 @@ export default function LSCDashboard() {
             Logout
           </button>
         </div>
-      </header>
+      </header> */}
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-8">
 
@@ -300,6 +300,13 @@ export default function LSCDashboard() {
         <p className="text-sm text-gray-600 mt-1">
           {lsc.block_name} Block, {lsc.district_name}
         </p>
+        
+        <Link
+          href="/dashboard/lsc/profile"
+          className="w-full sm:w-auto  text-blue-600 px-6 py-3 font-semibold text-center"
+        >
+         More...
+        </Link>
       </section>
 
       {/* STATS */}
