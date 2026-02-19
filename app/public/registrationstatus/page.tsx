@@ -1,54 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { Menu, X, PlusCircle, LogIn, Search, ShieldCheck, MapPin } from 'lucide-react';
 
 export default function TrackApplicationPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   
-  // Inline Search Error State
-  const [searchError, setSearchError] = useState<string | null>(null);
-
-  // Pagination & List states
   const [allApplications, setAllApplications] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
   const itemsPerPage = 7;
 
-  // Verification & Credential Modals
   const [verifyingApp, setVerifyingApp] = useState<any | null>(null);
   const [inputVerifyCode, setInputVerifyCode] = useState('');
   const [verifyError, setVerifyError] = useState(false);
-  const [showCredentialModal, setShowCredentialModal] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchApplications();
-  }, [currentPage]);
+  }, []);
 
   const fetchApplications = async () => {
     setLoading(true);
-    const from = (currentPage - 1) * itemsPerPage;
-    const to = from + itemsPerPage - 1;
-
     try {
-      const { data, count, error } = await supabase
+      const { data, error } = await supabase
         .from('lscs')
-        .select(`applicationCode, id, lsc_name, status, districts ( name ), blocks ( name )`, { count: 'exact' })
+        .select(`applicationCode, id, lsc_name, status, districts ( name ), blocks ( name )`)
         .not('applicationCode', 'is', null) 
-        .order('created_at', { ascending: false })
-        .range(from, to);
+        .order('lsc_name', { ascending: true });
 
       if (error) throw error;
       setAllApplications(data || []);
-      setTotalCount(count || 0);
     } catch (err) {
       console.error("Fetch Error:", err);
     } finally {
@@ -56,190 +40,201 @@ export default function TrackApplicationPage() {
     }
   };
 
-  const handleSearchAction = async () => {
-    const term = searchQuery.trim();
-    if (!term) return;
+  const filteredApplications = useMemo(() => {
+    const term = searchQuery.toLowerCase().trim();
+    if (!term) return allApplications;
+    return allApplications.filter((app) => {
+      const name = app.lsc_name?.toLowerCase() || '';
+      const district = app.districts?.name?.toLowerCase() || '';
+      const block = app.blocks?.name?.toLowerCase() || '';
+      return name.includes(term) || district.includes(term) || block.includes(term);
+    });
+  }, [searchQuery, allApplications]);
 
-    setIsSearching(true);
-    setSearchError(null); // Clear previous errors
-
-    try {
-      const { data, error } = await supabase
-        .from('lscs')
-        .select(`applicationCode, id, lsc_name, status`)
-        .eq('applicationCode', term)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (!data) {
-        setSearchError("No application found with this code.");
-      } else if (data.status !== 'APPROVED') {
-        setSearchError(`Center "${data.lsc_name}" is currently ${data.status}. Setup is only for APPROVED centers.`);
-      } else {
-        setVerifyingApp(data);
-        setInputVerifyCode('');
-        setVerifyError(false);
-      }
-    } catch (err) {
-      setSearchError("An error occurred while searching. Please try again.");
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleVerifyAndOpen = () => {
-    if (inputVerifyCode.trim() === String(verifyingApp.applicationCode)) {
-      setVerifyError(false);
-      setShowCredentialModal(true);
-    } else {
-      setVerifyError(true);
-    }
-  };
-
-  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  const totalPages = Math.ceil(filteredApplications.length / itemsPerPage);
+  const paginatedData = filteredApplications.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
-      <header className="bg-white border-b border-slate-200 h-20 flex items-center justify-between px-6 sticky top-0 z-40">
-        <Link href="/" className="flex items-center gap-3">
-          <img src="/logo1.jpg" alt="Logo" className="h-8 w-auto" />
-          <h1 className="text-lg font-black uppercase tracking-tight">LSC Portal</h1>
-        </Link>
-      </header>
-
-      <main className="max-w-6xl mx-auto w-full py-6 px-4 md:px-6">
-        
-        {/* SEARCH BAR SECTION */}
-        <div className="flex flex-col gap-2 mb-8">
-          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-            <input 
-              type="text" 
-              inputMode="numeric"
-              placeholder="ENTER APPLICATION CODE..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                if (searchError) setSearchError(null); // Clear error when typing
-              }}
-              className={`flex-1 bg-white border-2 rounded-2xl px-6 py-4 text-[11px] font-black uppercase tracking-widest outline-none transition-all shadow-sm ${searchError ? 'border-red-200 focus:border-red-400' : 'border-slate-200 focus:border-blue-600'}`}
-            />
-            <button 
-              onClick={handleSearchAction}
-              disabled={isSearching}
-              className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest disabled:opacity-50 active:scale-95 transition-all shadow-lg shadow-blue-100"
-            >
-              {isSearching ? 'SEARCHING...' : 'VERIFY & SETUP'}
-            </button>
-          </div>
+      
+      {/* HEADER */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-[60]">
+        <div className="max-w-6xl mx-auto h-20 flex items-center justify-between px-6">
+          <Link href="/" className="flex items-center gap-3">
+            <img src="/logo1.jpg" alt="Logo" className="h-10 w-auto" />
+            <h1 className="text-xl font-bold text-slate-800 tracking-tight hidden sm:block">LSC Portal</h1>
+          </Link>
           
-          {/* INLINE ERROR MESSAGE INSTEAD OF ALERT */}
-          {searchError && (
-            <div className="px-4 py-3 bg-red-50 border border-red-100 rounded-xl flex items-center justify-between animate-in fade-in slide-in-from-top-1">
-              <p className="text-[10px] font-black text-red-600 uppercase tracking-tight">
-                {searchError}
-              </p>
-              <button onClick={() => setSearchError(null)} className="text-red-400 hover:text-red-600">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"/></svg>
-              </button>
-            </div>
-          )}
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center gap-8">
+            <Link href="/public/lscregistration" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">New Application</Link>
+            <Link href="/login" className="bg-blue-700 text-white px-6 py-2.5 rounded-md text-sm font-bold hover:bg-blue-800 transition-all shadow-md">Sign In</Link>
+          </nav>
+
+          {/* Hamburger Toggle Button */}
+          <button 
+            className="md:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors" 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle Menu"
+          >
+            {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-[2rem] shadow-xl overflow-hidden">
-          <div className="p-8 border-b border-slate-100">
-            <h2 className="text-2xl font-black uppercase text-slate-900 leading-none">Center Registry</h2>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Real-time status tracking</p>
+        {/* MOBILE MENU OVERLAY */}
+        {isMenuOpen && (
+          <div className="md:hidden absolute top-20 left-0 w-full h-screen bg-white z-[70] border-t border-slate-100 animate-in slide-in-from-top duration-200">
+            <div className="flex flex-col p-6 gap-4">
+              <Link 
+                href="/public/lscregistration" 
+                onClick={() => setIsMenuOpen(false)}
+                className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl text-sm font-bold text-slate-700 border border-slate-100"
+              >
+                <PlusCircle size={20} className="text-blue-600" /> New Application
+              </Link>
+              <Link 
+                href="/login" 
+                onClick={() => setIsMenuOpen(false)}
+                className="flex items-center gap-3 p-4 bg-blue-700 rounded-xl text-sm font-bold text-white shadow-lg"
+              >
+                <LogIn size={20} /> Sign In
+              </Link>
+            </div>
+          </div>
+        )}
+      </header>
+
+      <main className="max-w-6xl mx-auto w-full py-8 px-4 md:px-6">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-slate-800">Track My Application</h2>
+          <p className="text-slate-500 text-sm mt-1 font-medium">Search by Center Name, District, or Block</p>
+        </div>
+
+        {/* SEARCH SECTION */}
+        <div className="mb-10 flex flex-col md:flex-row items-stretch gap-3 max-w-3xl">
+          <div className="relative flex-1">
+            <input 
+              type="text" 
+              placeholder="Search name, district, or block..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              className="w-full rounded-md border border-slate-300 pl-11 pr-4 py-3 text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all font-medium"
+            />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          </div>
+          <button className="bg-blue-700 text-white px-8 py-3 rounded-md font-bold text-sm hover:bg-blue-800 shadow-md uppercase tracking-wide">Search Now</button>
+        </div>
+
+        {/* REGISTRY CONTAINER */}
+        <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+          {/* DESKTOP TABLE */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                  <th className="py-4 px-8">LSC Name / Address</th>
+                  <th className="py-4 px-8 text-center">Status</th>
+                  <th className="py-4 px-8 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {loading ? (
+                  <tr><td colSpan={3} className="p-16 text-center text-slate-400 text-sm font-medium animate-pulse">Loading...</td></tr>
+                ) : paginatedData.map((app) => (
+                  <tr key={app.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="py-6 px-8">
+                      <p className="font-bold text-slate-800">{app.lsc_name}</p>
+                      <div className="flex items-center gap-1 text-slate-500 mt-1">
+                        <MapPin size={12} className="text-slate-400" />
+                        <p className="text-xs font-medium">{app.districts?.name} • {app.blocks?.name}</p>
+                      </div>
+                    </td>
+                    <td className="py-6 px-8 text-center">
+                      <span className={`text-[10px] font-bold px-3 py-1 rounded-md ${app.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                        {app.status}
+                      </span>
+                    </td>
+                    <td className="py-6 px-8 text-right">
+                      {app.status === 'APPROVED' && (
+                        <button onClick={() => { setVerifyingApp(app); setInputVerifyCode(''); }} className="bg-slate-900 text-white px-5 py-2 rounded-md text-[10px] font-bold uppercase hover:bg-blue-700 transition-all">Setup Center</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
-          <div className="p-0">
-            {/* DESKTOP VIEW */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-slate-50/50 border-b border-slate-100">
-                    <th className="py-5 px-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Center Info</th>
-                    <th className="py-5 px-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                    <th className="py-5 px-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {loading ? (
-                    <tr><td colSpan={3} className="p-20 text-center animate-pulse font-black text-slate-300">LOADING...</td></tr>
-                  ) : allApplications.map((app) => (
-                    <tr key={app.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="py-6 px-8">
-                        <p className="font-bold text-slate-800">{app.lsc_name}</p>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-tight">{app.districts?.name} / {app.blocks?.name}</p>
-                      </td>
-                      <td className="py-6 px-8">
-                        <span className={`text-[9px] font-black px-3 py-1.5 rounded-full border ${app.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                          {app.status}
-                        </span>
-                      </td>
-                      <td className="py-6 px-8 text-right">
-                        {app.status === 'APPROVED' && (
-                          <button onClick={() => { setVerifyingApp(app); setInputVerifyCode(''); }} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase hover:bg-blue-600 transition-all active:scale-95">Setup</button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* MOBILE VIEW */}
-            <div className="md:hidden divide-y divide-slate-100">
-              {loading ? (
-                <div className="p-10 text-center animate-pulse font-black text-slate-300">LOADING...</div>
-              ) : allApplications.map((app) => (
-                <div key={app.id} className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <p className="font-bold text-slate-800 text-sm">{app.lsc_name}</p>
-                      <p className="text-[9px] font-black text-slate-400 uppercase mt-1">{app.districts?.name} / {app.blocks?.name}</p>
-                    </div>
-                    <span className={`text-[8px] font-black px-2 py-1 rounded border ${app.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                      {app.status}
-                    </span>
+          {/* MOBILE CARDS */}
+          <div className="md:hidden divide-y divide-slate-100">
+            {loading ? (
+              <div className="p-10 text-center text-slate-400 text-sm font-medium animate-pulse">Loading...</div>
+            ) : paginatedData.map((app) => (
+              <div key={app.id} className="p-6 space-y-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-bold text-slate-800 text-lg leading-tight">{app.lsc_name}</p>
+                    <p className="text-sm text-slate-500 mt-1 font-medium">{app.districts?.name}, {app.blocks?.name}</p>
                   </div>
-                  {app.status === 'APPROVED' && (
-                    <button 
-                      onClick={() => { setVerifyingApp(app); setInputVerifyCode(''); }}
-                      className="w-full bg-slate-900 text-white py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest active:bg-blue-600 transition-all"
-                    >
-                      Setup Account
-                    </button>
-                  )}
+                  <span className={`text-[9px] font-bold px-2.5 py-1 rounded-md shrink-0 ${app.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {app.status}
+                  </span>
                 </div>
-              ))}
-            </div>
+                {app.status === 'APPROVED' && (
+                  <button onClick={() => { setVerifyingApp(app); setInputVerifyCode(''); }} className="w-full bg-slate-900 text-white py-3.5 rounded-lg text-xs font-bold uppercase tracking-widest active:bg-blue-700 shadow-sm transition-all">Setup Center Account</button>
+                )}
+              </div>
+            ))}
           </div>
           
-          <div className="p-6 flex justify-between items-center border-t border-slate-50 bg-slate-50/30">
-             <p className="text-[10px] font-black text-slate-400 uppercase">Page {currentPage} of {totalPages || 1}</p>
-             <div className="flex gap-2">
-                <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="px-4 py-2 border bg-white rounded-xl text-[10px] font-black disabled:opacity-30 active:scale-95">PREV</button>
-                <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="px-4 py-2 border bg-white rounded-xl text-[10px] font-black disabled:opacity-30 active:scale-95">NEXT</button>
+          <div className="p-5 flex justify-between items-center border-t border-slate-100 bg-slate-50/50">
+             <p className="text-xs font-bold text-slate-500">Results: {filteredApplications.length}</p>
+             <div className="flex gap-4">
+                <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="text-xs font-bold text-slate-400 hover:text-slate-800 disabled:opacity-30 uppercase tracking-widest">Prev</button>
+                <button disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(p => p + 1)} className="text-xs font-bold text-slate-400 hover:text-slate-800 disabled:opacity-30 uppercase tracking-widest">Next</button>
              </div>
           </div>
         </div>
+
+        <p className="mt-12 text-[10px] text-center text-slate-400 font-bold uppercase tracking-[0.2em]">
+          © MSRLS • Government of Meghalaya
+        </p>
       </main>
 
       {/* VERIFY MODAL */}
-      {verifyingApp && !showCredentialModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-black uppercase text-center mb-2">Security Check</h3>
-            <p className="text-[9px] font-bold text-slate-400 text-center uppercase mb-8 tracking-widest">Confirm code for {verifyingApp.lsc_name}</p>
-            <input 
-              type="text" inputMode="numeric" placeholder="ENTER CODE" value={inputVerifyCode} 
-              onChange={(e) => setInputVerifyCode(e.target.value)}
-              className={`w-full bg-slate-50 border-2 rounded-2xl py-5 text-center text-2xl font-black outline-none transition-all ${verifyError ? 'border-red-400 bg-red-50 text-red-600' : 'border-slate-100 focus:border-blue-600'}`}
-            />
-            {verifyError && <p className="text-[9px] font-black text-red-500 uppercase text-center mt-3 tracking-widest">Incorrect verification code</p>}
-            <button onClick={handleVerifyAndOpen} className="w-full bg-slate-900 text-white py-5 rounded-2xl mt-6 font-black uppercase text-[10px] tracking-widest hover:bg-blue-600 transition-all">Verify & Continue</button>
-            <button onClick={() => setVerifyingApp(null)} className="w-full mt-4 text-[10px] font-black text-slate-300 uppercase tracking-widest hover:text-slate-500 transition-colors">Cancel</button>
+      {verifyingApp && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl border border-slate-200 p-8 relative animate-in zoom-in-95 duration-200">
+            <button 
+              onClick={() => setVerifyingApp(null)}
+              className="absolute top-4 right-4 p-1 text-slate-400 hover:text-slate-800 transition-colors"
+            >
+              <X size={24} />
+            </button>
+            <h3 className="text-xl font-bold text-center text-slate-800 mb-1">Verify Access</h3>
+            <p className="text-xs text-center text-slate-500 mb-6 font-medium">Authorized setup for: {verifyingApp.lsc_name}</p>
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Application Code</label>
+                <input 
+                  type="text" inputMode="numeric" placeholder="Enter Code" value={inputVerifyCode} 
+                  onChange={(e) => { setInputVerifyCode(e.target.value); setVerifyError(false); }}
+                  className={`w-full rounded-md border px-4 py-3 text-center text-lg font-bold tracking-widest focus:ring-2 focus:ring-blue-100 ${verifyError ? 'border-red-500 bg-red-50' : 'border-slate-300 focus:border-blue-600'}`}
+                />
+              </div>
+              {verifyError && <p className="text-[10px] font-bold text-red-600 text-center uppercase">Incorrect code for this center.</p>}
+              <button 
+                onClick={() => {
+                   if (inputVerifyCode.trim() === String(verifyingApp.applicationCode)) { /* success */ } else { setVerifyError(true); }
+                }} 
+                className="w-full bg-blue-700 text-white py-3 rounded-md font-bold text-sm hover:bg-blue-800 shadow-md transition-all active:scale-95 uppercase tracking-widest"
+              >
+                VERIFY & CONTINUE
+              </button>
+            </div>
           </div>
         </div>
       )}
