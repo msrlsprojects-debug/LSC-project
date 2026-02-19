@@ -58,18 +58,18 @@ export default function TrackApplicationPage() {
     setVerifyError(false);
   };
 
-  // const handleVerifyAndOpen = () => {
-  //   if (!verifyingApp) return;
-  //   const actualCode = String(verifyingApp.applicationCode || "").toUpperCase().trim();
-  //   const inputCode = inputVerifyCode.toUpperCase().trim();
+  const handleVerifyAndOpen = () => {
+    if (!verifyingApp) return;
+    const actualCode = String(verifyingApp.applicationCode || "").toUpperCase().trim();
+    const inputCode = inputVerifyCode.toUpperCase().trim();
 
-  //   if (inputCode === actualCode && actualCode !== "") {
-  //     setVerifyError(false);
-  //     setShowCredentialModal(true);
-  //   } else {
-  //     setVerifyError(true);
-  //   }
-  // };
+    if (inputCode === actualCode && actualCode !== "") {
+      setVerifyError(false);
+      setShowCredentialModal(true);
+    } else {
+      setVerifyError(true);
+    }
+  };
 
   const handleCreateCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -253,9 +253,9 @@ export default function TrackApplicationPage() {
               }`}
             />
             
-            {/* <button onClick={handleVerifyAndOpen} className="w-full bg-slate-900 text-white py-5 md:py-6 rounded-2xl md:rounded-3xl font-black text-[10px] md:text-xs uppercase tracking-[0.25em] mt-6 hover:bg-blue-600 transition-all active:scale-95">
+             <button onClick={handleVerifyAndOpen} className="w-full bg-slate-900 text-white py-5 md:py-6 rounded-2xl md:rounded-3xl font-black text-[10px] md:text-xs uppercase tracking-[0.25em] mt-6 hover:bg-blue-600 transition-all active:scale-95">
               Verify & Continue
-            </button> */}
+            </button> 
             <button onClick={() => setVerifyingApp(null)} className="w-full mt-4 text-[10px] font-black uppercase text-slate-400 md:hidden pb-4">Cancel</button>
           </div>
         </div>
