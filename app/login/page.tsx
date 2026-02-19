@@ -44,7 +44,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-slate-50 to-slate-200">
-      {/* Left Panel */}
+      {/* Left Panel - Exact Original Desktop Format */}
       <div className="hidden md:flex w-1/2 items-center justify-center px-12">
         <div className="max-w-md space-y-4">
           <h1 className="text-2xl font-bold text-slate-800">
@@ -59,7 +59,6 @@ export default function LoginPage() {
             Government of Meghalaya
           </p>
 
-
           <Link
             href="/public/lscregistration"
             className="text-blue-600 hover:text-blue-800 font-medium transition-colors underline">
@@ -69,7 +68,7 @@ export default function LoginPage() {
           <Link
             href="/public/registrationstatus"
             className="text-blue-600 hover:text-blue-800 font-medium underline transition-colors p-2">
-            Track My Applocation
+            Track My Application
           </Link>
         </div>
       </div>
@@ -128,6 +127,21 @@ export default function LoginPage() {
           >
             {loading ? 'Signing in…' : 'Sign In'}
           </button>
+
+          {/* New Mobile-Only Links Section (Hidden on Desktop) */}
+          <div className="md:hidden mt-8 flex flex-col items-center space-y-3 pt-6 border-t border-slate-100">
+             <Link
+                href="/public/lscregistration"
+                className="text-blue-600 hover:text-blue-800 font-medium transition-colors underline">
+                New Application
+              </Link>
+
+              <Link
+                href="/public/registrationstatus"
+                className="text-blue-600 hover:text-blue-800 font-medium underline transition-colors">
+                Track My Application
+              </Link>
+          </div>
 
           <p className="mt-6 text-xs text-center text-slate-400">
             © MSRLS • Internal MIS

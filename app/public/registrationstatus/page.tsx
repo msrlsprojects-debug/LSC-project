@@ -112,12 +112,28 @@ export default function TrackApplicationPage() {
       </header>
 
       <main className="max-w-6xl mx-auto w-full py-6 md:py-12 px-4 md:px-6">
+        <div className="flex items-start justify-between mb-10 px-2">
+            <div>
+              {/* <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">New Application Form</h2>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Livelihood Service Center</p> */}
+            </div>
+            <button 
+              onClick={() => router.back()}
+              className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-all"
+            >
+              <div className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-slate-100 group-hover:border-blue-100 group-hover:bg-blue-50 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              </div>
+              <span>Back</span>
+            </button>
+          </div>
         <div className="bg-white border border-slate-200 rounded-[1.5rem] md:rounded-[2.5rem] shadow-xl shadow-slate-200/50 overflow-hidden">
           
           <div className="p-6 md:p-12 border-b border-slate-100 bg-gradient-to-b from-white to-slate-50/50">
             <h2 className="text-2xl md:text-4xl font-black uppercase tracking-tight mb-1 md:mb-2 text-slate-900">Registration Status</h2>
             <p className="text-slate-500 font-bold uppercase text-[9px] md:text-xs tracking-widest">Center Application Registry</p>
           </div>
+          
 
           <div className="p-0 md:p-8">
             {/* MOBILE LIST VIEW */}
