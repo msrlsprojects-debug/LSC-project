@@ -163,7 +163,7 @@ export default function LSCServiceHistory() {
   return (
     <div className="min-h-screen bg-gray-100">
             {/* NAV */}
-      <header className="bg-gradient-to-r from-blue-700 to-blue-600 text-white border-b">
+      {/* <header className="bg-gradient-to-r from-blue-700 to-blue-600 text-white border-b">
         <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between">
           <div>
             <p className="text-xs opacity-90">MSRLS – LSC MIS</p>
@@ -172,7 +172,7 @@ export default function LSCServiceHistory() {
             Logout
           </button>
         </div>
-      </header>
+      </header> */}
     
     <main className="max-w-6xl mx-auto px-4 py-6 space-y-8">
 

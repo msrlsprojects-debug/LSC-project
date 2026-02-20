@@ -139,7 +139,7 @@ export default function LSCProfileManagement() {
         )}
 
         {/* SECTION A: BASIC DETAILS */}
-        <section className="bg-white rounded-xl shadow-sm overflow-hidden border-t-4 border-blue-600">
+        <section className="bg-white rounded-xl shadow-sm overflow-hidden border-t-4 border-blue-600 ">
           <div className="max-w-6xl mx-auto px-4 py-2 flex justify-end gap-3">
           {!isEditing ? (
             <button onClick={() => setIsEditing(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-1.5 rounded-md text-xs font-bold shadow-sm transition-colors">

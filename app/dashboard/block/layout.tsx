@@ -17,9 +17,8 @@ export default function LSCProfileLayout({ children }: { children: ReactNode }) 
   };
 
   const navLinks = [
-    { name: 'Dashboard', href: '/dashboard/district', icon: LayoutDashboard },
-    { name: 'Users', href: '/dashboard/district/users', icon: User },
-    // { name: 'Verification', href: '/dashboard/lsc/verify', icon: ShieldCheck },
+    { name: 'Dashboard', href: '/dashboard/block', icon: LayoutDashboard },
+    { name: 'LSCs', href: '/dashboard/block/lsc', icon: User },
   ];
 
   return (
