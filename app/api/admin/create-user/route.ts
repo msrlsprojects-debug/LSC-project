@@ -39,8 +39,12 @@ export async function POST(req: Request) {
       .insert({
         user_id: authData.user.id,
         role,
-        district_id: role === 'DISTRICT' ? district_id : null,
-        block_id: role === 'BLOCK' ? block_id : null,
+        
+        district_id: district_id,
+        block_id:  block_id,
+
+        // district_id: role === 'DISTRICT' ? district_id : null,
+        // block_id: role === 'BLOCK' ? block_id : null,
         lsc_id: null,
       });
 

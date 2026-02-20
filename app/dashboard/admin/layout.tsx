@@ -1,149 +1,158 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, memo, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+import { 
+  LayoutDashboard, PlusCircle, List, Layers, Settings, Wallet, 
+  FileText, Users, BarChart3, LogOut, Menu, ChevronDown, UserCircle, X 
+} from 'lucide-react';
+
+// Memoized NavItem to prevent unnecessary re-renders (Performance)
+const NavItem = memo(({ href, children, icon: Icon, active, onClick }: any) => (
+  <Link 
+    href={href} 
+    prefetch={true} 
+    onClick={onClick} 
+    className={`
+      flex items-center gap-3 rounded-lg px-4 py-3 md:py-2.5 text-[14px] md:text-[13px] transition-all duration-150
+      ${active 
+        ? 'bg-blue-600 text-white font-semibold shadow-md md:translate-x-1' 
+        : 'text-slate-500 hover:text-slate-900 font-medium hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200'}
+    `}
+  >
+    {Icon && <Icon size={18} strokeWidth={active ? 2.5 : 2} />}
+    <span className="truncate tracking-wide">{children}</span>
+  </Link>
+));
+NavItem.displayName = 'NavItem';
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Ensures client-side logic only runs after mount to prevent hydration lag
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');
   };
 
+  if (!mounted) return <div className="bg-white h-screen w-full" />;
+
   return (
-    <div className="h-screen overflow-hidden bg-slate-50 text-slate-900 flex font-sans">
+    <div className="h-screen overflow-hidden bg-white text-slate-800 flex font-sans antialiased">
       
-      {/* ===== MOBILE OVERLAY ===== */}
+      {/* MOBILE OVERLAY */}
       {open && (
-        <div
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] md:hidden transition-opacity"
-          onClick={() => setOpen(false)}
+        <div 
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] md:hidden transition-opacity duration-300" 
+          onClick={() => setOpen(false)} 
         />
       )}
 
-      {/* ===== SIDEBAR ===== */}
-      <aside
-        className={`
-          fixed md:static z-[70]
-          inset-y-0 left-0
-          w-72 bg-slate-900
-          text-white
-          transform transition-transform duration-300 ease-in-out
-          ${open ? 'translate-x-0' : '-translate-x-full'}
-          md:translate-x-0
-          flex flex-col
-          overflow-hidden
-          shadow-2xl
-        `}
-      >
-        {/* Sidebar Brand Header */}
-        <div className="p-6 border-b border-slate-800 shrink-0 bg-slate-950/20">
-          <div className="flex items-center gap-4">
-            {/* <div className="bg-white p-1 rounded-lg shrink-0">
-              <img src="/logo1.jpg" alt="Logo" className="h-8 w-30 object-contain" />
-            </div> */}
-            <div className="flex flex-col">
-              <h1 className="text-sm font-black tracking-widest uppercase">MSRLS – LSC</h1>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Admin Portal</p>
-            </div>
+      {/* SIDEBAR - Optimized for Desktop & Mobile Drawer */}
+      <aside className={`
+        fixed md:static z-[70] inset-y-0 left-0 w-[280px] md:w-72 bg-slate-50 border-r border-slate-200
+        transform transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+        ${open ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 flex flex-col overflow-hidden
+      `}>
+        
+        {/* BRANDING AREA - No more blank space */}
+        <div className="h-20 md:h-24 flex items-center px-6 md:px-8 border-b border-slate-200 bg-white shrink-0">
+          <div className="flex flex-col relative">
+            <div className="absolute -left-4 top-0 bottom-0 w-1 bg-blue-600 rounded-full" />
+            <h1 className="text-[14px] md:text-[15px] font-black tracking-tight text-slate-900 uppercase leading-none">
+              MSRLS – LSC
+            </h1>
+            <p className="text-[9px] md:text-[10px] text-blue-600 font-bold uppercase tracking-[0.2em] mt-2">
+              Admin Portal
+            </p>
           </div>
+          <button onClick={() => setOpen(false)} className="md:hidden ml-auto p-2 text-slate-400 hover:bg-slate-100 rounded-full">
+            <X size={20} />
+          </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="p-4 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
-          <div>
-             <NavItem href="/dashboard/admin" onClick={() => setOpen(false)}>
-               <span className="flex items-center gap-2">
-                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                 Dashboard Overview
-               </span>
-             </NavItem>
-          </div>
+        {/* NAVIGATION - scrollbar-hide applied here */}
+        <nav className="p-4 space-y-6 flex-1 overflow-y-auto pt-6 scrollbar-hide">
+          <NavItem href="/dashboard/admin" icon={LayoutDashboard} active={pathname === '/dashboard/admin'} onClick={() => setOpen(false)}>
+            Dashboard Overview
+          </NavItem>
 
           <NavSection title="LSC Management">
-            <NavItem href="/dashboard/admin/lsc/new" onClick={() => setOpen(false)}>Add New + </NavItem>
-            <NavItem href="/dashboard/admin/lsc" onClick={() => setOpen(false)}>LSC List</NavItem>
-            {/* <NavItem href="/dashboard/admin/lsc/pending" onClick={() => setOpen(false)}>Pending List</NavItem>
-            <NavItem href="/dashboard/admin/lsc/rejected" onClick={() => setOpen(false)}>Rejected List</NavItem> */}
+            <NavItem href="/dashboard/admin/lsc/new" icon={PlusCircle} active={pathname === '/dashboard/admin/lsc/new'} onClick={() => setOpen(false)}>Add New +</NavItem>
+            <NavItem href="/dashboard/admin/lsc" icon={List} active={pathname === '/dashboard/admin/lsc'} onClick={() => setOpen(false)}>LSC List</NavItem>
           </NavSection>
 
           <NavSection title="Services Management">
-            <NavItem href="/dashboard/admin/services/categories" onClick={() => setOpen(false)}>Categories</NavItem>
-            <NavItem href="/dashboard/admin/services/services" onClick={() => setOpen(false)}>All Services</NavItem>
+            <NavItem href="/dashboard/admin/services/categories" icon={Layers} active={pathname.includes('categories')} onClick={() => setOpen(false)}>Categories</NavItem>
+            <NavItem href="/dashboard/admin/services/services" icon={Settings} active={pathname.includes('services')} onClick={() => setOpen(false)}>All Services</NavItem>
           </NavSection>
 
           <NavSection title="Finance & Accounting">
-            <NavItem href="/dashboard/admin/finance" onClick={() => setOpen(false)}>Financial Management</NavItem>
-            <NavItem href="/dashboard/admin/finance/expenditure" onClick={() => setOpen(false)}>Income & Expenditure</NavItem>
+            <NavItem href="/dashboard/admin/finance" icon={Wallet} active={pathname.includes('finance')} onClick={() => setOpen(false)}>Financial Management</NavItem>
+            {/* <NavItem href="/dashboard/admin/finance/expenditure" icon={FileText} active={pathname.includes('expenditure')} onClick={() => setOpen(false)}>Income & Expenditure</NavItem> */}
           </NavSection>
 
           <NavSection title="User Management">
-            <NavItem href="/dashboard/admin/users" onClick={() => setOpen(false)}>Users List</NavItem>
+            <NavItem href="/dashboard/admin/users" icon={Users} active={pathname === '/dashboard/admin/users'} onClick={() => setOpen(false)}>Users List</NavItem>
           </NavSection>
 
           <NavSection title="Intelligence">
-            <NavItem href="/dashboard/admin/reports" onClick={() => setOpen(false)}>Reports & Analytics</NavItem>
+            <NavItem href="/dashboard/admin/reports" icon={BarChart3} active={pathname === '/dashboard/admin/reports'} onClick={() => setOpen(false)}>Reports & Analytics</NavItem>
           </NavSection>
         </nav>
 
-        {/* Logout */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/50 shrink-0">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-between px-5 py-3.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all text-xs font-bold uppercase tracking-widest"
-          >
-            Logout Session
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+        {/* LOGOUT AREA */}
+        <div className="p-4 border-t border-slate-200 bg-white shrink-0">
+          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 px-4 py-3 md:py-2.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all text-[11px] font-bold uppercase tracking-widest active:scale-95">
+            <LogOut size={15} /> Logout Session
           </button>
         </div>
       </aside>
 
-      {/* ===== MAIN AREA ===== */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-
-        {/* HEADER */}
-        <header className="sticky top-0 z-50 w-full bg-white border-b border-slate-200 shadow-sm shrink-0">
-          <div className="px-4 md:px-8 h-16 flex items-center justify-between">
+      {/* MAIN AREA */}
+      <div className="flex-1 flex flex-col min-w-0 h-full bg-white">
+        
+        {/* HEADER - Increased Logo & Alignment */}
+        <header className="h-20 md:h-24 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-12 shrink-0 z-50">
+          <div className="flex items-center gap-3 md:gap-8">
+            <button onClick={() => setOpen(true)} className="md:hidden p-2 text-slate-600 hover:bg-slate-50 rounded-lg"><Menu size={24} /></button>
             
-            {/* Mobile Toggle + Brand */}
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setOpen(true)}
-                className="md:hidden p-2.5 text-slate-900 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
-                aria-label="Open Menu"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-              </button>
-              
-              <div className="flex items-center gap-2">
-                <img src="/logo1.jpg" alt="Logo" className="h-25 w-70 object-contain md:h-10" />
+            <div className="hidden md:block h-8 w-[1px] bg-slate-200" />
+
+            <img 
+              src="/logo1.jpg" 
+              alt="Logo" 
+              className="h-9 md:h-16 w-auto object-contain transition-transform hover:scale-105" 
+            />
+          </div>
+
+          <div className="flex items-center gap-3 md:gap-6">
+            <div className="hidden xs:flex flex-col items-end border-r border-slate-200 pr-4 md:pr-6">
+              <p className="text-[11px] md:text-[12px] font-bold text-slate-900 uppercase tracking-tight leading-none">Admin</p>
+              <div className="flex items-center gap-1 mt-1.5 md:mt-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <p className="text-[8px] md:text-[9px] font-semibold text-emerald-600 uppercase tracking-widest">Verified</p>
               </div>
             </div>
-
-            {/* Header Right Actions */}
-            <div className="flex items-center gap-3">
-              <div className="hidden xs:flex flex-col items-end mr-1">
-                <span className="text-xs font-black text-slate-900 uppercase">Administrator</span>
-                <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-tight">System Online</span>
-              </div>
-              <div className="w-10 h-10 rounded-full border-2 border-slate-100 bg-slate-50 flex items-center justify-center text-slate-400 shadow-inner">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              </div>
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 border-2 border-white shadow-sm ring-1 ring-slate-200">
+              <UserCircle size={24} className="md:w-[30px] md:h-[30px]" />
             </div>
           </div>
         </header>
 
-        {/* MAIN CONTENT AREA */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50/50 scroll-smooth">
-          <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
+        {/* PAGE CONTENT - scrollbar-hide applied here too */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-12 scrollbar-hide">
+          <div className="max-w-7xl mx-auto">
             {children}
           </div>
         </main>
@@ -152,39 +161,15 @@ export default function AdminLayout({
   );
 }
 
-/* ---------------- Components ---------------- */
-
-function NavItem({ href, children, onClick }: { href: string; children: React.ReactNode; onClick?: () => void }) {
-  return (
-    <Link
-      href={href}
-      onClick={onClick}
-      className="block rounded-xl px-4 py-3 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-all active:scale-[0.98]"
-    >
-      {children}
-    </Link>
-  );
-}
-
-function NavSection({ title, children }: { title: string; children: React.ReactNode }) {
-  const [isOpen, setIsOpen] = useState(false); // Default to open for better desktop visibility
-
+function NavSection({ title, children }: any) {
+  const [isOpen, setIsOpen] = useState(false);
   return (
     <div className="flex flex-col gap-1">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-2 mb-1 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-blue-400 transition-colors group"
-      >
+      <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between px-4 mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-slate-600 transition-colors">
         <span>{title}</span>
-        <svg 
-          className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} 
-          width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
-        >
-          <path d="m6 9 6 6 6-6"/>
-        </svg>
+        <ChevronDown size={14} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
-
-      <div className={`space-y-0.5 overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
+      <div className={`space-y-1 overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
         {children}
       </div>
     </div>
