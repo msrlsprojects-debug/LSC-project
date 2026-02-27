@@ -40,12 +40,12 @@ export default function UserManagementPage() {
   const pageSize = 10;
 
 
-  // get all lsc for that block
+  // get all lsc for that district
   const loadUsers = async () => {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/block/lsc', {
+      const res = await fetch('/api/district/lsc', {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
       const data = await res.json();
@@ -145,9 +145,7 @@ export default function UserManagementPage() {
                         }`}>
                         {u.block_status}
                       </span>
-
                       <div className="text-[10px] uppercase">{u.block_remarks}</div>
-
                     </td>
 
                     {/* district status */}
@@ -173,7 +171,7 @@ export default function UserManagementPage() {
 
                     <td className="px-6 py-4 text-right">
                       <button
-                        onClick={() => router.push(`/dashboard/block/lsc/${u.id}`)}
+                        onClick={() => router.push(`/dashboard/district/lsc/${u.id}`)}
                         className="text-blue-600 font-bold text-[11px] hover:underline"
                       >
                         VIEW

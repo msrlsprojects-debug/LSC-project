@@ -147,7 +147,7 @@ export default function CreateAdminUserPage() {
             className="w-full border rounded px-3 py-2 mt-1"
           >
             <option value="DISTRICT">District Admin</option>
-            <option value="BLOCK">Block Admin</option>
+            {/* <option value="BLOCK">Block Admin</option> */}
           </select>
         </div>
 

@@ -7,92 +7,101 @@ const supabase = createClient(
 );
 
 /* -----------------------------------
-    Updated Explicit DB row typing
+   Explicit DB row typing
 ----------------------------------- */
 type ProfileRow = {
   user_id: string;
-  role: string;
-  // Add your specific lscs table columns here so TypeScript recognizes them
-  id: string;
-  full_name?: string; 
-  phone?: string;
-  status?: string;
-  // ... any other fields from your 'lscs' table
+  role: 'DISTRICT' | 'BLOCK' | 'ANCHOR' | 'LSC';
   district: { name: string } | null;
   block: { name: string } | null;
 };
 
 export async function GET(req: NextRequest) {
   try {
+    /* -----------------------------------
+        Get the Login User's ID from Token
+    ----------------------------------- */
     const authHeader = req.headers.get('Authorization');
     const token = authHeader?.split(' ')[1];
 
     if (!token) {
-      return NextResponse.json({ error: "No token provided" }, { status: 401 }); 
+      console.error("No token provided in headers");
+      return NextResponse.json([]); 
     }
 
+    // Identify the user from the token passed from frontend
     const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); 
+      console.error("Auth error or user not found:", authError);
+      return NextResponse.json([]); 
     }
 
-    /* -----------------------------------
-        Get the scope of the logged-in Admin
-    ----------------------------------- */
+    
     const { data: adminProfile, error: adminError } = await supabase
       .from('profiles')
       .select('block_id')
-      .eq('user_id', authUser.id)
+      .eq('user_id', authUser.id) // Using the ID from the validated token
       .single();
 
     if (adminError || !adminProfile?.block_id) {
-      return NextResponse.json({ error: "Admin context not found" }, { status: 404 }); 
+      console.error("Admin profile or block not found");
+      return NextResponse.json([]); 
     }
     
     /* -----------------------------------
-        Fetch LSC details 
+        Fetch profiles based on that district
     ----------------------------------- */
     const { data: profiles, error } = await supabase
-      .from('lscs')
+     
+    
+    .from('profiles')
       .select(`
-        id,lsc_name,district_id,block_id,block_status,block_remarks,district_status,district_remarks,state_status,state_remarks,
+        user_id,
+        role,
         district:district_id ( name ),
         block:block_id ( name )
       `)
       .eq('block_id', adminProfile.block_id) 
+      .in('role', ['LSC', 'ANCHOR'])
       .returns<ProfileRow[]>();
 
     if (error) {
-      console.error("LSC fetch error:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error("Profile fetch error:", error);
+      return NextResponse.json([]);
     }
 
     /* -----------------------------------
-        Fetch auth users for emails
+        Fetch auth users (emails)
     ----------------------------------- */
-    // const { data: authUsers, error: authErrorList } = await supabase.auth.admin.listUsers();
+    // Using service role here is fine as it's initialized at the top
+    const { data: authUsers, error: authErrorList } = await supabase.auth.admin.listUsers();
+
+    if (authErrorList) {
+      console.error("Error listing auth users:", authErrorList);
+      return NextResponse.json([]);
+    }
 
     /* -----------------------------------
-        Merge and Return ALL details
+        Merge profiles + emails
     ----------------------------------- */
     const users = (profiles || []).map((p) => {
-      // const authUserMatch = authUsers?.users.find((u) => u.id === p.user_id);
+      const authUserMatch = authUsers.users.find((u) => u.id === p.user_id);
 
       return {
-        // Spread all properties from the 'lscs' table row (id, name, phone, etc.)
-        ...p,
+        user_id: p.user_id,
+        role: p.role,
+        email: authUserMatch?.email || '—',
         district: p.district?.name || null,
         block: p.block?.name || null,
-        // email: authUserMatch?.email || '—',
-
       };
     });
 
+    // Final result returned to frontend
     return NextResponse.json(users);
 
   } catch (err) {
     console.error('Server error:', err);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 }); 
+    return NextResponse.json([]); 
   }
 }

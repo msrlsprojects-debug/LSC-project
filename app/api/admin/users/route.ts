@@ -29,7 +29,7 @@ const { data: profiles, error } = await supabase
     district:district_id ( name ),
     block:block_id ( name )
   `)
-  .in('role', ['DISTRICT', 'BLOCK'])
+  .in('role', ['DISTRICT'])
   .returns<ProfileRow[]>();
 
     if (error) {

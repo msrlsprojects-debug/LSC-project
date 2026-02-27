@@ -65,7 +65,7 @@ export default function ApprovalLSCPage() {
       setSelectedCategories((lscCatRes.data || []).map(c => c.service_categories_item_id));
 
       // Load existing remarks from DB into the text area
-      setRemarks(lscData.block_remarks || '');
+      setRemarks(lscData.district_remarks || '');
 
       setForm({
         ...lscData,
@@ -86,6 +86,7 @@ export default function ApprovalLSCPage() {
       .then(({ data }) => setBlocks(data || []));
   }, [form.district_id]);
 
+
   const handleAction = async (status: 'APPROVED' | 'REJECTED') => {
     if (status === 'REJECTED' && !remarks.trim()) {
       alert("Please provide remarks for rejection.");
@@ -97,13 +98,13 @@ export default function ApprovalLSCPage() {
     setProcessing(true);
     try {
       const { error } = await supabase.from('lscs').update({
-        block_status: status,
-        block_remarks: remarks,
+        district_status: status,
+        district_remarks: remarks,
         is_active: status === 'APPROVED'
       }).eq('id', id);
 
       if (error) throw error;
-      router.push('/dashboard/block/lsc');
+      router.push('/dashboard/district/lsc');
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -117,11 +118,6 @@ export default function ApprovalLSCPage() {
     <div className="max-w-5xl mx-auto bg-white border rounded p-6 mt-6 shadow-sm">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-xl text-slate-800">Livelihood Service Centre - Approval Details</h1>
-        {/* {form.block_status && (
-          <div className="text-[11px] px-2 py-1 border bg-slate-50 text-slate-600 rounded">
-            Current Status: {form.block_status}
-          </div>
-        )} */}
       </div>
 
       <div className="flex border-b mb-6 overflow-x-auto">

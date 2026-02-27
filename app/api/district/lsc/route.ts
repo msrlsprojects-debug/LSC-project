@@ -42,11 +42,11 @@ export async function GET(req: NextRequest) {
     ----------------------------------- */
     const { data: adminProfile, error: adminError } = await supabase
       .from('profiles')
-      .select('block_id')
+      .select('district_id')
       .eq('user_id', authUser.id)
       .single();
 
-    if (adminError || !adminProfile?.block_id) {
+    if (adminError || !adminProfile?.district_id) {
       return NextResponse.json({ error: "Admin context not found" }, { status: 404 }); 
     }
     
@@ -60,7 +60,8 @@ export async function GET(req: NextRequest) {
         district:district_id ( name ),
         block:block_id ( name )
       `)
-      .eq('block_id', adminProfile.block_id) 
+      .eq('district_id', adminProfile.district_id) 
+      .eq('block_status', 'APPROVED')
       .returns<ProfileRow[]>();
 
     if (error) {

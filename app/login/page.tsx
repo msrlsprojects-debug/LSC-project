@@ -59,7 +59,7 @@ export default function LoginPage() {
             Government of Meghalaya
           </p>
 
-          <Link
+          {/* <Link
             href="/public/lscregistration"
             className="text-blue-600 hover:text-blue-800 font-medium transition-colors underline">
             New Application
@@ -69,7 +69,7 @@ export default function LoginPage() {
             href="/public/registrationstatus"
             className="text-blue-600 hover:text-blue-800 font-medium underline transition-colors p-2">
             Track My Application
-          </Link>
+          </Link> */}
         </div>
       </div>
 

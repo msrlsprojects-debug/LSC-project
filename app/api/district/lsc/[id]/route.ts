@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     const { data: profiles, error } = await supabase
       .from('lscs')
       .select(`
-        id,lsc_name,district_id,block_id,block_status,block_remarks,district_status,district_remarks,state_status,state_remarks,
+        id,lsc_name,district_id,block_id,status, 
         district:district_id ( name ),
         block:block_id ( name )
       `)

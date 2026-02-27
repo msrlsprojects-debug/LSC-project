@@ -38,19 +38,6 @@ export async function GET(req: NextRequest) {
     }
 
     /* -----------------------------------
-        Get the scope of the logged-in Admin
-    ----------------------------------- */
-    const { data: adminProfile, error: adminError } = await supabase
-      .from('profiles')
-      .select('block_id')
-      .eq('user_id', authUser.id)
-      .single();
-
-    if (adminError || !adminProfile?.block_id) {
-      return NextResponse.json({ error: "Admin context not found" }, { status: 404 }); 
-    }
-    
-    /* -----------------------------------
         Fetch LSC details 
     ----------------------------------- */
     const { data: profiles, error } = await supabase
@@ -60,7 +47,8 @@ export async function GET(req: NextRequest) {
         district:district_id ( name ),
         block:block_id ( name )
       `)
-      .eq('block_id', adminProfile.block_id) 
+      .eq('block_status', 'APPROVED')
+      .eq('district_status', 'APPROVED')
       .returns<ProfileRow[]>();
 
     if (error) {
@@ -68,24 +56,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    /* -----------------------------------
-        Fetch auth users for emails
-    ----------------------------------- */
-    // const { data: authUsers, error: authErrorList } = await supabase.auth.admin.listUsers();
-
-    /* -----------------------------------
-        Merge and Return ALL details
-    ----------------------------------- */
+ 
     const users = (profiles || []).map((p) => {
-      // const authUserMatch = authUsers?.users.find((u) => u.id === p.user_id);
-
       return {
-        // Spread all properties from the 'lscs' table row (id, name, phone, etc.)
         ...p,
         district: p.district?.name || null,
         block: p.block?.name || null,
         // email: authUserMatch?.email || '—',
-
       };
     });
 
